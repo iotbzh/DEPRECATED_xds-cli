@@ -1,0 +1,5 @@
+debug
+glide.lock
+bin/**
+tools/**
+vendor/**

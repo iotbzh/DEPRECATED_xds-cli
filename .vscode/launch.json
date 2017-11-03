@@ -1,0 +1,87 @@
+{
+    "version": "0.2.0",
+    "configurations": [{
+            "name": "xds-cli (version)",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}",
+            "env": {
+                "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
+                "XDS_APPNAME": "xds-cli",
+                "XDS_SERVER_URL": "localhost:8800",
+                "XDS_LOGLEVEL": "debug"
+            },
+            "args": ["misc", "version"],
+            "showLog": false
+        },
+        {
+            "name": "xds-cli (list)",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}",
+            "env": {
+                "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
+                "XDS_APPNAME": "xds-cli",
+                "XDS_SERVER_URL": "localhost:8800",
+                "XDS_LOGLEVEL": "debug"
+            },
+            "args": ["sdks", "list"],
+            "showLog": false
+        },
+        {
+            "name": "xds-cli (add Projects)",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}",
+            "env": {
+                "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
+                "XDS_APPNAME": "xds-cli",
+                "XDS_SERVER_URL": "localhost:8800",
+                "XDS_LOGLEVEL": "debug"
+            },
+            "args": ["prj", "add",
+                "-type", "pm",
+                "-path", "/home/seb/xds-workspace/test1",
+                "-server-path", "/home/seb/xds-workspace/test1"
+            ],
+            "showLog": false
+        },
+        {
+            "name": "xds-cli (exec Projects)",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}",
+            "env": {
+                "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
+                "XDS_APPNAME": "xds-cli",
+                "XDS_SERVER_URL": "localhost:8800",
+                "XDS_LOGLEVEL": "debug"
+            },
+            "args": ["exec",
+                "-id", "IW7B4EE-DBY4Z74_Agent-TCF",
+                "-rpath", "build",
+                "pwd && ls .."
+            ],
+            "showLog": false
+        },
+        {
+            "name": "xds-cli (with xds-config.env)",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}",
+            "env": {
+                "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
+                "XDS_APPNAME": "xds-cli",
+                "XDS_LOGLEVEL": "debug"
+            },
+            "args": ["-c", "xds-config-sample.env", "sdks", "ls"],
+            "showLog": false
+        }
+
+    ]
+}
