@@ -76,16 +76,25 @@ func main() {
 	}
 	appUsage := fmt.Sprintf("command line tool for X(cross) Development System.")
 	appDescription := fmt.Sprintf("%s utility for X(cross) Development System\n", AppName)
-	/* SEB UPDATE DOC
-		appDescription += `
-	   xds-cli configuration is driven either by environment variables or by command line
-	   options or using a config file knowning that the following priority order is used:
-	     1. use option value (for example use project ID set by --id option),
-	     2. else use variable 'XDS_xxx' (for example 'XDS_PROJECT_ID' variable) when a
-	        config file is specified with '--config|-c' option,
-	     3. else use 'XDS_xxx' (for example 'XDS_PROJECT_ID') environment variable.
-	`
-	*/
+	appDescription += `
+    Setting of global options is driven either by environment variables or by command
+    line options or using a config file knowning that the following priority order is used:
+      1. use option value (for example --url option),
+      2. else use variable 'XDS_xxx' (for example 'XDS_SERVER_URL' variable) when a
+         config file is specified with '--config|-c' option,
+      3. else use 'XDS_xxx' (for example 'XDS_SERVER_URL') environment variable.
+
+    Examples:
+    # Get help of 'projects' sub-command
+    ` + AppName + ` projects --help
+
+    # List all SDKs
+    ` + AppName + ` sdks ls
+
+    # Add a new project
+    ` + AppName + ` prj add --label="myProject" --type=cs --path=$HOME/xds-workspace/myProject
+`
+
 	// Create a new App instance
 	app := cli.NewApp()
 	app.Name = AppName
@@ -159,6 +168,14 @@ func main() {
 
 	app.Before = func(ctx *cli.Context) error {
 		var err error
+
+		// Don't init anything when user wants help
+		for _, a := range ctx.Args() {
+			switch a {
+			case "-h", "--h", "-help", "--help":
+				return nil
+			}
+		}
 
 		// Load config file if requested
 		confFile := ctx.String("config")
