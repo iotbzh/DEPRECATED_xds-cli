@@ -1,13 +1,13 @@
 # Makefile used to build xds-cli commands
 
-# Application Version
+# Application Name
 TARGET=xds-cli
 
 
 # Retrieve git tag/commit to set version & sub-version strings
 GIT_DESC := $(shell git describe --always --tags)
 VERSION := $(firstword $(subst -, ,$(GIT_DESC)))
-SUB_VERSION := $(wordlist 2,3,$(subst -, ,$(GIT_DESC)))
+SUB_VERSION := $(subst $(VERSION)-,,$(GIT_DESC))
 ifeq ($(VERSION), )
 	VERSION := unknown-dev
 endif
