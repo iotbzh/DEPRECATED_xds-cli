@@ -11,6 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	common "github.com/iotbzh/xds-common/golib"
+	"github.com/joho/godotenv"
 	socketio_client "github.com/sebd71/go-socket.io-client"
 	"github.com/urfave/cli"
 )
@@ -43,6 +44,9 @@ const (
 // Log Global variable that hold logger
 var Log = logrus.New()
 
+// EnvConfFileMap Global variable that hold environment vars loaded from config file
+var EnvConfFileMap map[string]string
+
 // HTTPCli Global variable that hold HTTP Client
 var HTTPCli *common.HTTPClient
 
@@ -58,6 +62,7 @@ func exitError(code int, f string, a ...interface{}) {
 
 // main
 func main() {
+	EnvConfFileMap := make(map[string]string)
 
 	// Allow to set app name from cli (useful for debugging)
 	if AppName == "" {
@@ -154,6 +159,25 @@ func main() {
 
 	app.Before = func(ctx *cli.Context) error {
 		var err error
+
+		// Load config file if requested
+		confFile := ctx.String("config")
+		if confFile != "" {
+			if !common.Exists(confFile) {
+				exitError(1, "Error env config file not found")
+			}
+			// Load config file variables that will overwrite env variables
+			err := godotenv.Overload(confFile)
+			if err != nil {
+				exitError(1, "Error loading env config file "+confFile)
+			}
+			// Keep confFile settings in a map
+			EnvConfFileMap, err = godotenv.Read(confFile)
+			if err != nil {
+				exitError(1, "Error reading env config file "+confFile)
+			}
+		}
+
 		loglevel := ctx.String("log")
 		// Set logger level and formatter
 		if Log.Level, err = logrus.ParseLevel(loglevel); err != nil {
@@ -163,7 +187,7 @@ func main() {
 		Log.Formatter = &logrus.TextFormatter{}
 
 		Log.Infof("%s version: %s", AppName, app.Version)
-		// SEB Add again Log.Debugf("Environment: %v", os.Environ())
+		Log.Debugf("Environment: %v", os.Environ())
 
 		if err = XdsConnInit(ctx); err != nil {
 			// Directly call HandleExitCoder to avoid to print help (ShowAppHelp)

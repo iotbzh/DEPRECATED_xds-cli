@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/iotbzh/xds-agent/lib/apiv1"
-	common "github.com/iotbzh/xds-common/golib"
-	"github.com/joho/godotenv"
 	"github.com/urfave/cli"
 )
 
@@ -38,30 +36,12 @@ func initCmdExec(cmdDef *[]cli.Command) {
 
 func exec(ctx *cli.Context) error {
 	prjID := ctx.String("id")
-	confFile := ctx.String("config")
 	rPath := ctx.String("rPath")
 	sdkid := ctx.String("sdkid")
 
 	// Check mandatory args
 	if prjID == "" {
 		return cli.NewExitError("project id must be set (see --id option)", 1)
-	}
-
-	// Load config file if requested
-	envMap := make(map[string]string)
-	if confFile != "" {
-		if !common.Exists(confFile) {
-			exitError(1, "Error env config file not found")
-		}
-		// Load config file variables that will overwrite env variables
-		err := godotenv.Overload(confFile)
-		if err != nil {
-			exitError(1, "Error loading env config file "+confFile)
-		}
-		envMap, err = godotenv.Read(confFile)
-		if err != nil {
-			exitError(1, "Error reading env config file "+confFile)
-		}
 	}
 
 	argsCommand := make([]string, len(ctx.Args()))
@@ -128,9 +108,9 @@ func exec(ctx *cli.Context) error {
 	}
 
 	// Build env
-	Log.Debugf("Command env: %v", envMap)
+	Log.Debugf("Command env: %v", EnvConfFileMap)
 	env := []string{}
-	for k, v := range envMap {
+	for k, v := range EnvConfFileMap {
 		env = append(env, k+"="+v)
 	}
 
