@@ -61,6 +61,7 @@ func exec(ctx *cli.Context) error {
 	exitChan := make(chan exitResult, 1)
 
 	IOsk.On("disconnection", func(err error) {
+		Log.Debugf("WS disconnection event with err: %v\n", err)
 		exitChan <- exitResult{err, 2}
 	})
 
@@ -84,6 +85,15 @@ func exec(ctx *cli.Context) error {
 	IOsk.On(apiv1.ExecExitEvent, func(ev apiv1.ExecExitMsg) {
 		exitChan <- exitResult{ev.Error, ev.Code}
 	})
+
+	IOsk.On(apiv1.EVTProjectChange, func(ev apiv1.EventMsg) {
+		prj, _ := ev.DecodeProjectConfig()
+		Log.Infof("Event %v (%v): %v", ev.Type, ev.Time, prj)
+	})
+	evReg := apiv1.EventRegisterArgs{Name: apiv1.EVTProjectChange}
+	if err := HTTPCli.Post("/events/register", &evReg, nil); err != nil {
+		return cli.NewExitError(err, 1)
+	}
 
 	// Retrieve the project definition
 	prj := apiv1.ProjectConfig{}
