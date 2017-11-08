@@ -22,19 +22,19 @@ func initCmdProjects(cmdDef *[]cli.Command) {
 				Action:  projectsAdd,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "label",
+						Name:  "label, l",
 						Usage: "project label (free form string)",
 					},
 					cli.StringFlag{
-						Name:  "path",
+						Name:  "path, p",
 						Usage: "project local path",
 					},
 					cli.StringFlag{
-						Name:  "server-path",
+						Name:  "server-path, sp",
 						Usage: "project server path (only used with pathmap type)",
 					},
 					cli.StringFlag{
-						Name:  "type",
+						Name:  "type, t",
 						Usage: "project type (pathmap|pm, cloudsync|sc)",
 					},
 				},

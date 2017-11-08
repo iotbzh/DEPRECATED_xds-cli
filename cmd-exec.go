@@ -21,12 +21,12 @@ func initCmdExec(cmdDef *[]cli.Command) {
 				Usage:  "project ID you want to build (mandatory variable)",
 			},
 			cli.StringFlag{
-				Name:   "rpath",
+				Name:   "rpath, p",
 				EnvVar: "XDS_RPATH",
 				Usage:  "relative path into project",
 			},
 			cli.StringFlag{
-				Name:   "sdkid",
+				Name:   "sdkid, sdk",
 				EnvVar: "XDS_SDK_ID",
 				Usage:  "Cross Sdk ID to use to build project",
 			},
