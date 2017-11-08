@@ -169,7 +169,10 @@ func main() {
 	app.Before = func(ctx *cli.Context) error {
 		var err error
 
-		// Don't init anything when user wants help
+		// Don't init anything when no argument or help option is set
+		if ctx.NArg() == 0 {
+			return nil
+		}
 		for _, a := range ctx.Args() {
 			switch a {
 			case "-h", "--h", "-help", "--help":
@@ -254,6 +257,7 @@ func XdsConnInit(ctx *cli.Context) error {
 		return cli.NewExitError(errmsg, 1)
 	}
 	HTTPCli.SetLogLevel(ctx.String("loglevel"))
+	Log.Infoln("HTTP session ID : ", HTTPCli.GetClientID())
 
 	// Create io Websocket client
 	Log.Debugln("Connecting IO.socket client on ", baseURL)
