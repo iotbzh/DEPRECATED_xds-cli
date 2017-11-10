@@ -3,3 +3,4 @@ glide.lock
 bin/**
 tools/**
 vendor/**
+*.zip
