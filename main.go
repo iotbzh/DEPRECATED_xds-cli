@@ -62,6 +62,8 @@ func exitError(code int, f string, a ...interface{}) {
 
 // main
 func main() {
+	var earlyDebug []string
+
 	EnvConfFileMap := make(map[string]string)
 
 	// Allow to set app name from cli (useful for debugging)
@@ -166,6 +168,36 @@ func main() {
 	sort.Sort(cli.FlagsByName(app.Flags))
 	sort.Sort(cli.CommandsByName(app.Commands))
 
+	// Early and manual processing of --config option in order to set XDS_xxx
+	// variables before parsing of option by app cli
+	confFile := os.Getenv("XDS_CONFIG")
+	for idx, a := range os.Args[1:] {
+		if a == "-c" || a == "--config" || a == "-config" {
+			confFile = os.Args[idx+2]
+			break
+		}
+	}
+
+	// Load config file if requested
+	if confFile != "" {
+		earlyDebug = append(earlyDebug, fmt.Sprintf("confFile detected: %v", confFile))
+		if !common.Exists(confFile) {
+			exitError(1, "Error env config file not found")
+		}
+		// Load config file variables that will overwrite env variables
+		err := godotenv.Overload(confFile)
+		if err != nil {
+			exitError(1, "Error loading env config file "+confFile)
+		}
+
+		// Keep confFile settings in a map
+		EnvConfFileMap, err = godotenv.Read(confFile)
+		if err != nil {
+			exitError(1, "Error reading env config file "+confFile)
+		}
+		earlyDebug = append(earlyDebug, fmt.Sprintf("EnvConfFileMap: %v", EnvConfFileMap))
+	}
+
 	app.Before = func(ctx *cli.Context) error {
 		var err error
 
@@ -180,24 +212,6 @@ func main() {
 			}
 		}
 
-		// Load config file if requested
-		confFile := ctx.String("config")
-		if confFile != "" {
-			if !common.Exists(confFile) {
-				exitError(1, "Error env config file not found")
-			}
-			// Load config file variables that will overwrite env variables
-			err := godotenv.Overload(confFile)
-			if err != nil {
-				exitError(1, "Error loading env config file "+confFile)
-			}
-			// Keep confFile settings in a map
-			EnvConfFileMap, err = godotenv.Read(confFile)
-			if err != nil {
-				exitError(1, "Error reading env config file "+confFile)
-			}
-		}
-
 		loglevel := ctx.String("log")
 		// Set logger level and formatter
 		if Log.Level, err = logrus.ParseLevel(loglevel); err != nil {
@@ -207,7 +221,10 @@ func main() {
 		Log.Formatter = &logrus.TextFormatter{}
 
 		Log.Infof("%s version: %s", AppName, app.Version)
-		Log.Debugf("Environment: %v", os.Environ())
+		for _, str := range earlyDebug {
+			Log.Infof("%s", str)
+		}
+		Log.Debugf("\nEnvironment: %v\n", os.Environ())
 
 		if err = XdsConnInit(ctx); err != nil {
 			// Directly call HandleExitCoder to avoid to print help (ShowAppHelp)
