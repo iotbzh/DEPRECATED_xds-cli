@@ -64,8 +64,6 @@ func exitError(code int, f string, a ...interface{}) {
 func main() {
 	var earlyDebug []string
 
-	EnvConfFileMap := make(map[string]string)
-
 	// Allow to set app name from cli (useful for debugging)
 	if AppName == "" {
 		AppName = os.Getenv("XDS_APPNAME")

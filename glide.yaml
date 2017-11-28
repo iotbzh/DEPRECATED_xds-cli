@@ -12,9 +12,9 @@ import:
 - package: github.com/sebd71/go-socket.io-client
   version: 46defcb47f
 - package: github.com/iotbzh/xds-agent
-  version: 4e9af3723740f16f
+  version: v1.0.0-rc1
   subpackages:
-  - agent
+  - lib/xaapiv1
 - package: github.com/iotbzh/xds-common
   version: ^0.1.0
   subpackages:

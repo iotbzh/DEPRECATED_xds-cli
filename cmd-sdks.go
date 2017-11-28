@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/iotbzh/xds-agent/lib/apiv1"
+	"github.com/iotbzh/xds-agent/lib/xaapiv1"
 	"github.com/urfave/cli"
 )
 
@@ -62,7 +62,7 @@ func initCmdSdks(cmdDef *[]cli.Command) {
 
 func sdksList(ctx *cli.Context) error {
 	// Get SDKs list
-	sdks := []apiv1.SDK{}
+	sdks := []xaapiv1.SDK{}
 	if err := sdksListGet(&sdks); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -75,16 +75,16 @@ func sdksGet(ctx *cli.Context) error {
 	if id == "" {
 		return cli.NewExitError("id parameter or option must be set", 1)
 	}
-	sdks := apiv1.SDK{}
-	url := "server/" + strconv.Itoa(XdsServerIndexGet()) + "/sdks/" + id
+	sdks := xaapiv1.SDK{}
+	url := "servers/" + strconv.Itoa(XdsServerIndexGet()) + "/sdks/" + id
 	if err := HTTPCli.Get(url, &sdks); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
-	_displaySdks([]apiv1.SDK{sdks}, true)
+	_displaySdks([]xaapiv1.SDK{sdks}, true)
 	return nil
 }
 
-func _displaySdks(sdks []apiv1.SDK, verbose bool) {
+func _displaySdks(sdks []xaapiv1.SDK, verbose bool) {
 	// Display result
 	first := true
 	writer := NewTableWriter()
@@ -112,8 +112,8 @@ func _displaySdks(sdks []apiv1.SDK, verbose bool) {
 	writer.Flush()
 }
 
-func sdksListGet(sdks *[]apiv1.SDK) error {
-	url := "server/" + strconv.Itoa(XdsServerIndexGet()) + "/sdks"
+func sdksListGet(sdks *[]xaapiv1.SDK) error {
+	url := "servers/" + strconv.Itoa(XdsServerIndexGet()) + "/sdks"
 	if err := HTTPCli.Get(url, &sdks); err != nil {
 		return err
 	}

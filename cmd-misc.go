@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/iotbzh/xds-agent/lib/apiv1"
+	"github.com/iotbzh/xds-agent/lib/xaapiv1"
 	"github.com/urfave/cli"
 )
 
@@ -33,7 +33,7 @@ func xdsVersion(ctx *cli.Context) error {
 	verbose := ctx.Bool("verbose")
 
 	// Get version
-	ver := apiv1.XDSVersion{}
+	ver := xaapiv1.XDSVersion{}
 	if err := XdsVersionGet(&ver); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}

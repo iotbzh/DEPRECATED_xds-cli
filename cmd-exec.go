@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/iotbzh/xds-agent/lib/apiv1"
+	"github.com/iotbzh/xds-agent/lib/xaapiv1"
 	"github.com/urfave/cli"
 )
 
@@ -49,7 +49,7 @@ func exec(ctx *cli.Context) error {
 	Log.Infof("Execute: /exec %v", argsCommand)
 
 	// Log useful info for debugging
-	ver := apiv1.XDSVersion{}
+	ver := xaapiv1.XDSVersion{}
 	XdsVersionGet(&ver)
 	Log.Infof("XDS version: %v", ver)
 
@@ -78,25 +78,25 @@ func exec(ctx *cli.Context) error {
 		}
 	}
 
-	IOsk.On(apiv1.ExecOutEvent, func(ev apiv1.ExecOutMsg) {
+	IOsk.On(xaapiv1.ExecOutEvent, func(ev xaapiv1.ExecOutMsg) {
 		outFunc(ev.Timestamp, ev.Stdout, ev.Stderr)
 	})
 
-	IOsk.On(apiv1.ExecExitEvent, func(ev apiv1.ExecExitMsg) {
+	IOsk.On(xaapiv1.ExecExitEvent, func(ev xaapiv1.ExecExitMsg) {
 		exitChan <- exitResult{ev.Error, ev.Code}
 	})
 
-	IOsk.On(apiv1.EVTProjectChange, func(ev apiv1.EventMsg) {
+	IOsk.On(xaapiv1.EVTProjectChange, func(ev xaapiv1.EventMsg) {
 		prj, _ := ev.DecodeProjectConfig()
 		Log.Infof("Event %v (%v): %v", ev.Type, ev.Time, prj)
 	})
-	evReg := apiv1.EventRegisterArgs{Name: apiv1.EVTProjectChange}
+	evReg := xaapiv1.EventRegisterArgs{Name: xaapiv1.EVTProjectChange}
 	if err := HTTPCli.Post("/events/register", &evReg, nil); err != nil {
 		return cli.NewExitError(err, 1)
 	}
 
 	// Retrieve the project definition
-	prj := apiv1.ProjectConfig{}
+	prj := xaapiv1.ProjectConfig{}
 	if err := HTTPCli.Get("/projects/"+prjID, &prj); err != nil {
 		return cli.NewExitError(err, 1)
 	}
@@ -125,7 +125,7 @@ func exec(ctx *cli.Context) error {
 	}
 
 	// Send build command
-	args := apiv1.ExecArgs{
+	args := xaapiv1.ExecArgs{
 		ID:         prjID,
 		SdkID:      sdkid,
 		Cmd:        strings.Trim(argsCommand[0], " "),

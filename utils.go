@@ -3,21 +3,21 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/iotbzh/xds-agent/lib/apiv1"
+	"github.com/iotbzh/xds-agent/lib/xaapiv1"
 	"github.com/urfave/cli"
 )
 
-var cacheXdsVersion *apiv1.XDSVersion
+var cacheXdsVersion *xaapiv1.XDSVersion
 
 // XdsVersionGet Get version of XDS agent & server
-func XdsVersionGet(ver *apiv1.XDSVersion) error {
+func XdsVersionGet(ver *xaapiv1.XDSVersion) error {
 	// Use cached data
 	if cacheXdsVersion != nil {
 		ver = cacheXdsVersion
 		return nil
 	}
 
-	dataVer := apiv1.XDSVersion{}
+	dataVer := xaapiv1.XDSVersion{}
 	if err := HTTPCli.Get("/version", &dataVer); err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func XdsVersionGet(ver *apiv1.XDSVersion) error {
 
 // XdsServerIDGet returns the XDS Server ID
 func XdsServerIDGet() string {
-	ver := apiv1.XDSVersion{}
+	ver := xaapiv1.XDSVersion{}
 	if err := XdsVersionGet(&ver); err != nil {
 		return ""
 	}
@@ -46,7 +46,7 @@ func XdsServerIndexGet() int {
 }
 
 // ProjectsListGet Get the list of existing projects
-func ProjectsListGet(prjs *[]apiv1.ProjectConfig) error {
+func ProjectsListGet(prjs *[]xaapiv1.ProjectConfig) error {
 	var data []byte
 	if err := HTTPCli.HTTPGet("/projects", &data); err != nil {
 		return err

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iotbzh/xds-agent/lib/apiv1"
+	"github.com/iotbzh/xds-agent/lib/xaapiv1"
 	"github.com/urfave/cli"
 )
 
@@ -92,7 +92,7 @@ func initCmdProjects(cmdDef *[]cli.Command) {
 
 func projectsList(ctx *cli.Context) error {
 	// Get projects list
-	prjs := []apiv1.ProjectConfig{}
+	prjs := []xaapiv1.ProjectConfig{}
 	if err := ProjectsListGet(&prjs); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -105,7 +105,7 @@ func projectsGet(ctx *cli.Context) error {
 	if id == "" {
 		return cli.NewExitError("id parameter or option must be set", 1)
 	}
-	prjs := make([]apiv1.ProjectConfig, 1)
+	prjs := make([]xaapiv1.ProjectConfig, 1)
 	if err := HTTPCli.Get("/projects/"+id, &prjs[0]); err != nil {
 		return cli.NewExitError(err, 1)
 	}
@@ -113,7 +113,7 @@ func projectsGet(ctx *cli.Context) error {
 	return nil
 }
 
-func _displayProjects(prjs []apiv1.ProjectConfig, verbose bool) {
+func _displayProjects(prjs []xaapiv1.ProjectConfig, verbose bool) {
 	// Display result
 	first := true
 	writer := NewTableWriter()
@@ -126,7 +126,7 @@ func _displayProjects(prjs []apiv1.ProjectConfig, verbose bool) {
 			fmt.Fprintln(writer, "Label:\t", folder.Label)
 			fmt.Fprintln(writer, "Path type:\t", folder.Type)
 			fmt.Fprintln(writer, "Local Path:\t", folder.ClientPath)
-			if folder.Type != apiv1.TypeCloudSync {
+			if folder.Type != xaapiv1.TypeCloudSync {
 				fmt.Fprintln(writer, "Server Path:\t", folder.ServerPath)
 			}
 			fmt.Fprintln(writer, "Status:\t", folder.Status)
@@ -151,17 +151,17 @@ func _displayProjects(prjs []apiv1.ProjectConfig, verbose bool) {
 func projectsAdd(ctx *cli.Context) error {
 
 	// Decode project type
-	var ptype apiv1.ProjectType
+	var ptype xaapiv1.ProjectType
 	switch strings.ToLower(ctx.String("type")) {
 	case "pathmap", "pm":
-		ptype = apiv1.TypePathMap
+		ptype = xaapiv1.TypePathMap
 	case "cloudsync", "cs":
-		ptype = apiv1.TypeCloudSync
+		ptype = xaapiv1.TypeCloudSync
 	default:
 		return cli.NewExitError("Unknown project type", 1)
 	}
 
-	prj := apiv1.ProjectConfig{
+	prj := xaapiv1.ProjectConfig{
 		ServerID:   XdsServerIDGet(),
 		Label:      ctx.String("label"),
 		Type:       ptype,
@@ -170,7 +170,7 @@ func projectsAdd(ctx *cli.Context) error {
 	}
 
 	Log.Infof("POST /project %v", prj)
-	newPrj := apiv1.ProjectConfig{}
+	newPrj := xaapiv1.ProjectConfig{}
 	err := HTTPCli.Post("/projects", prj, &newPrj)
 	if err != nil {
 		return cli.NewExitError(err, 1)
@@ -182,7 +182,7 @@ func projectsAdd(ctx *cli.Context) error {
 }
 
 func projectsRemove(ctx *cli.Context) error {
-	var res apiv1.ProjectConfig
+	var res xaapiv1.ProjectConfig
 	id := GetID(ctx)
 	if id == "" {
 		return cli.NewExitError("id parameter or option must be set", 1)
