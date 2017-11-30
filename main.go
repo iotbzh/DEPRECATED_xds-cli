@@ -143,7 +143,7 @@ func main() {
 			Value:  defaultLogLevel,
 		},
 		cli.StringFlag{
-			Name:   "url",
+			Name:   "url, u",
 			EnvVar: "XDS_SERVER_URL",
 			Value:  "localhost:8000",
 			Usage:  "remote XDS server url",
@@ -247,8 +247,15 @@ func XdsConnInit(ctx *cli.Context) error {
 
 	// Define HTTP and WS url
 	baseURL := ctx.String("url")
-	if !strings.HasPrefix(ctx.String("url"), "http://") {
-		baseURL = "http://" + ctx.String("url")
+
+	// Allow to only set port number
+	if match, _ := regexp.MatchString("^([0-9]+)$", baseURL); match {
+		baseURL = "http://localhost:" + ctx.String("url")
+	}
+
+	// Add http prefix if missing
+	if !strings.HasPrefix(baseURL, "http://") {
+		baseURL = "http://" + baseURL
 	}
 
 	// Create HTTP client

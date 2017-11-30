@@ -39,7 +39,8 @@ func xdsVersion(ctx *cli.Context) error {
 	}
 
 	writer := NewTableWriter()
-	fmt.Fprintln(writer, "Agent ID:\t", ver.Client.ID)
+	fmt.Fprintln(writer, "Agent:")
+	fmt.Fprintln(writer, "      ID:\t", ver.Client.ID)
 	v := ver.Client.Version
 	if verbose {
 		v += " (" + ver.Client.VersionGitTag + ")"
@@ -50,7 +51,8 @@ func xdsVersion(ctx *cli.Context) error {
 	}
 
 	for _, svr := range ver.Server {
-		fmt.Fprintln(writer, "Server ID:\t", svr.ID)
+		fmt.Fprintln(writer, "Server:")
+		fmt.Fprintln(writer, "       ID:\t", svr.ID)
 		v = svr.Version
 		if verbose {
 			v += " (" + svr.VersionGitTag + ")"
