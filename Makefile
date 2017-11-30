@@ -7,7 +7,9 @@ TARGET=xds-cli
 # Retrieve git tag/commit to set version & sub-version strings
 GIT_DESC := $(shell git describe --always --tags)
 VERSION := $(firstword $(subst -, ,$(GIT_DESC)))
+ifeq (-,$(findstring -,$(GIT_DESC)))
 SUB_VERSION := $(subst $(VERSION)-,,$(GIT_DESC))
+endif
 ifeq ($(VERSION), )
 	VERSION := unknown-dev
 endif
@@ -40,6 +42,14 @@ PACKAGE_DIR := $(ROOT_SRCDIR)/package
 export GOPATH := $(shell go env GOPATH):$(ROOT_GOPRJ)
 export PATH := $(PATH):$(LOCAL_TOOLSDIR)
 
+# Check Go version
+GOVERSION := $(shell go version |grep -o '[0-9\.]*'|head -n 1)
+GOVERMAJ := $(shell echo $(GOVERSION) |cut -f1 -d.)
+GOVERMIN := $(shell echo $(GOVERSION) |cut -f2 -d.)
+CHECKGOVER := $(shell [ $(GOVERMAJ) -gt 1 -o \( $(GOVERMAJ) -eq 1 -a $(GOVERMIN) -ge 8 \) ] && echo true)
+CHECKERRMSG := "ERROR: Go version 1.8.1 or higher is requested (current detected version: $(GOVERSION))."
+
+
 VERBOSE_1 := -v
 VERBOSE_2 := -v -x
 
@@ -67,7 +77,7 @@ endif
 all: vendor build
 
 .PHONY: build
-build:
+build: checkgover
 	@echo "### Build $(TARGET) (version $(VERSION), subversion $(SUB_VERSION) - $(BUILD_MODE))";
 	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/$(TARGET)$(EXT) -ldflags "$(GO_LDFLAGS) -X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" -gcflags "$(GO_GCFLAGS)" .
 
@@ -138,6 +148,12 @@ tools/glide:
 		curl --silent -L https://glide.sh/get | GOBIN=$(LOCAL_TOOLSDIR)  sh; \
 	}
 
+.PHONY:
+checkgover:
+	@test "$(CHECKGOVER)" = "true" || { echo $(CHECKERRMSG); exit 1; }
+
+
+.PHONY: help
 help:
 	@echo "Main supported rules:"
 	@echo "  all               (default)"
