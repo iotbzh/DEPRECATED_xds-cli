@@ -43,6 +43,18 @@ func initCmdMisc(cmdDef *[]cli.Command) {
 					},
 				},
 			},
+			{
+				Name:    "status",
+				Aliases: []string{"sts"},
+				Usage:   "Get XDS configuration status (including XDS server connection)",
+				Action:  xdsStatus,
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "verbose, v",
+						Usage: "display verbose output",
+					},
+				},
+			},
 		},
 	})
 }
@@ -79,6 +91,26 @@ func xdsVersion(ctx *cli.Context) error {
 		if verbose {
 			fmt.Fprintln(writer, "       API Version:\t", svr.APIVersion)
 		}
+	}
+	writer.Flush()
+
+	return nil
+}
+
+func xdsStatus(ctx *cli.Context) error {
+	cfg := xaapiv1.APIConfig{}
+	if err := XdsConfigGet(&cfg); err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	writer := NewTableWriter()
+	fmt.Fprintln(writer, "XDS Server:")
+	for _, svr := range cfg.Servers {
+		fmt.Fprintln(writer, "       ID:\t", svr.ID)
+		fmt.Fprintln(writer, "       URL:\t", svr.URL)
+		fmt.Fprintln(writer, "       Connected:\t", svr.Connected)
+		fmt.Fprintln(writer, "       Connection retry:\t", svr.ConnRetry)
+		fmt.Fprintln(writer, "       Disabled:\t", svr.Disabled)
 	}
 	writer.Flush()
 
