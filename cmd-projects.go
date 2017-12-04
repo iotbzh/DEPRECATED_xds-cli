@@ -63,8 +63,9 @@ func initCmdProjects(cmdDef *[]cli.Command) {
 				Action: projectsGet,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "id",
-						Usage: "project id",
+						Name:   "id",
+						Usage:  "project id",
+						EnvVar: "XDS_PROJECT_ID",
 					},
 				},
 			},
@@ -87,8 +88,9 @@ func initCmdProjects(cmdDef *[]cli.Command) {
 				Action:  projectsRemove,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "id",
-						Usage: "project id",
+						Name:   "id",
+						Usage:  "project id",
+						EnvVar: "XDS_PROJECT_ID",
 					},
 				},
 			},
@@ -99,8 +101,9 @@ func initCmdProjects(cmdDef *[]cli.Command) {
 				Action:  projectsSync,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "id",
-						Usage: "project id",
+						Name:   "id",
+						Usage:  "project id",
+						EnvVar: "XDS_PROJECT_ID",
 					},
 				},
 			},

@@ -45,8 +45,9 @@ func initCmdSdks(cmdDef *[]cli.Command) {
 				Action: sdksGet,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "id",
-						Usage: "sdk id",
+						Name:   "id",
+						Usage:  "sdk id",
+						EnvVar: "XDS_SDK_ID",
 					},
 				},
 			},
@@ -69,8 +70,9 @@ func initCmdSdks(cmdDef *[]cli.Command) {
 				Action:  sdksRemove,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "id",
-						Usage: "sdk id",
+						Name:   "id",
+						Usage:  "sdk id",
+						EnvVar: "XDS_SDK_ID",
 					},
 				},
 			},
