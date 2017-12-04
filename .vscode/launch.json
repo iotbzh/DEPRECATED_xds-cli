@@ -9,7 +9,7 @@
             "env": {
                 "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
                 "XDS_APPNAME": "xds-cli",
-                "XDS_SERVER_URL": "localhost:8800",
+                "XDS_AGENT_URL": "localhost:8800",
                 "XDS_LOGLEVEL": "debug"
             },
             "args": ["misc", "version"],
@@ -24,7 +24,7 @@
             "env": {
                 "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
                 "XDS_APPNAME": "xds-cli",
-                "XDS_SERVER_URL": "localhost:8800",
+                "XDS_AGENT_URL": "localhost:8800",
                 "XDS_LOGLEVEL": "debug"
             },
             "args": ["sdks", "list"],
@@ -39,7 +39,7 @@
             "env": {
                 "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
                 "XDS_APPNAME": "xds-cli",
-                "XDS_SERVER_URL": "localhost:8800",
+                "XDS_AGENT_URL": "localhost:8800",
                 "XDS_LOGLEVEL": "debug"
             },
             "args": ["prj", "add",
@@ -58,7 +58,7 @@
             "env": {
                 "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
                 "XDS_APPNAME": "xds-cli",
-                "XDS_SERVER_URL": "localhost:8800",
+                "XDS_AGENT_URL": "localhost:8800",
                 "XDS_LOGLEVEL": "debug"
             },
             "args": ["exec",

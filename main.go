@@ -29,6 +29,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/iotbzh/xds-agent/lib/xaapiv1"
 	common "github.com/iotbzh/xds-common/golib"
 	"github.com/joho/godotenv"
 	socketio_client "github.com/sebd71/go-socket.io-client"
@@ -99,9 +100,9 @@ func main() {
     Setting of global options is driven either by environment variables or by command
     line options or using a config file knowning that the following priority order is used:
       1. use option value (for example --url option),
-      2. else use variable 'XDS_xxx' (for example 'XDS_SERVER_URL' variable) when a
+      2. else use variable 'XDS_xxx' (for example 'XDS_AGENT_URL' variable) when a
          config file is specified with '--config|-c' option,
-      3. else use 'XDS_xxx' (for example 'XDS_SERVER_URL') environment variable.
+      3. else use 'XDS_xxx' (for example 'XDS_AGENT_URL') environment variable.
 
     Examples:
     # Get help of 'projects' sub-command
@@ -163,9 +164,15 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:   "url, u",
+			EnvVar: "XDS_AGENT_URL",
+			Value:  "localhost:8800",
+			Usage:  "local XDS agent url",
+		},
+		cli.StringFlag{
+			Name:   "url-server, us",
 			EnvVar: "XDS_SERVER_URL",
-			Value:  "localhost:8000",
-			Usage:  "remote XDS server url",
+			Value:  "",
+			Usage:  "overwrite remote XDS server url (default value set in xds-agent-config.json file)",
 		},
 		cli.BoolFlag{
 			Name:   "timestamp, ts",
@@ -265,20 +272,26 @@ func XdsConnInit(ctx *cli.Context) error {
 	var err error
 
 	// Define HTTP and WS url
-	baseURL := ctx.String("url")
+	agentURL := ctx.String("url")
+	serverURL := ctx.String("url-server")
 
 	// Allow to only set port number
-	if match, _ := regexp.MatchString("^([0-9]+)$", baseURL); match {
-		baseURL = "http://localhost:" + ctx.String("url")
+	if match, _ := regexp.MatchString("^([0-9]+)$", agentURL); match {
+		agentURL = "http://localhost:" + ctx.String("url")
 	}
-
+	if match, _ := regexp.MatchString("^([0-9]+)$", serverURL); match {
+		serverURL = "http://localhost:" + ctx.String("url-server")
+	}
 	// Add http prefix if missing
-	if !strings.HasPrefix(baseURL, "http://") {
-		baseURL = "http://" + baseURL
+	if agentURL != "" && !strings.HasPrefix(agentURL, "http://") {
+		agentURL = "http://" + agentURL
+	}
+	if serverURL != "" && !strings.HasPrefix(serverURL, "http://") {
+		serverURL = "http://" + serverURL
 	}
 
 	// Create HTTP client
-	Log.Debugln("Connect HTTP client on ", baseURL)
+	Log.Debugln("Connect HTTP client on ", agentURL)
 	conf := common.HTTPClientConfig{
 		URLPrefix:           "/api/v1",
 		HeaderClientKeyName: "Xds-Agent-Sid",
@@ -288,12 +301,12 @@ func XdsConnInit(ctx *cli.Context) error {
 		LogLevel:            common.HTTPLogLevelWarning,
 	}
 
-	HTTPCli, err = common.HTTPNewClient(baseURL, conf)
+	HTTPCli, err = common.HTTPNewClient(agentURL, conf)
 	if err != nil {
 		errmsg := err.Error()
 		if m, err := regexp.MatchString("Get http.?://", errmsg); m && err == nil {
 			i := strings.LastIndex(errmsg, ":")
-			errmsg = "Cannot connection to " + baseURL + errmsg[i:]
+			errmsg = "Cannot connection to " + agentURL + errmsg[i:]
 		}
 		return cli.NewExitError(errmsg, 1)
 	}
@@ -301,7 +314,7 @@ func XdsConnInit(ctx *cli.Context) error {
 	Log.Infoln("HTTP session ID : ", HTTPCli.GetClientID())
 
 	// Create io Websocket client
-	Log.Debugln("Connecting IO.socket client on ", baseURL)
+	Log.Debugln("Connecting IO.socket client on ", agentURL)
 
 	opts := &socketio_client.Options{
 		Transport: "websocket",
@@ -309,7 +322,7 @@ func XdsConnInit(ctx *cli.Context) error {
 	}
 	opts.Header["XDS-AGENT-SID"] = []string{HTTPCli.GetClientID()}
 
-	IOsk, err = socketio_client.NewClient(baseURL, opts)
+	IOsk, err = socketio_client.NewClient(agentURL, opts)
 	if err != nil {
 		return cli.NewExitError("IO.socket connection error: "+err.Error(), 1)
 	}
@@ -320,6 +333,27 @@ func XdsConnInit(ctx *cli.Context) error {
 
 	ctx.App.Metadata["httpCli"] = HTTPCli
 	ctx.App.Metadata["ioskCli"] = IOsk
+
+	// Display version in logs (debug helpers)
+	ver := xaapiv1.XDSVersion{}
+	if err := XdsVersionGet(&ver); err != nil {
+		return cli.NewExitError("ERROR while retrieving XDS version: "+err.Error(), 1)
+	}
+	Log.Infof("XDS Agent/Server version: %v", ver)
+
+	// Get current config and update connection to server when needed
+	xdsConf := xaapiv1.APIConfig{}
+	if err := XdsConfigGet(&xdsConf); err != nil {
+		return cli.NewExitError("ERROR while getting XDS config: "+err.Error(), 1)
+	}
+	svrCfg := xdsConf.Servers[XdsServerIndexGet()]
+	if serverURL != "" && (svrCfg.URL != serverURL || !svrCfg.Connected) {
+		svrCfg.URL = serverURL
+		svrCfg.ConnRetry = 10
+		if err := XdsConfigSet(xdsConf); err != nil {
+			return cli.NewExitError("ERROR while updating XDS server URL: "+err.Error(), 1)
+		}
+	}
 
 	return nil
 }

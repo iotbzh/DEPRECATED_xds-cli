@@ -20,28 +20,48 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 
+	"github.com/franciscocpg/reflectme"
 	"github.com/iotbzh/xds-agent/lib/xaapiv1"
 	"github.com/urfave/cli"
 )
 
 var cacheXdsVersion *xaapiv1.XDSVersion
+var cacheData = xaapiv1.XDSVersion{}
 
 // XdsVersionGet Get version of XDS agent & server
 func XdsVersionGet(ver *xaapiv1.XDSVersion) error {
-	// Use cached data
-	if cacheXdsVersion != nil {
-		ver = cacheXdsVersion
-		return nil
+	// Update cached data
+	if cacheXdsVersion == nil {
+		if err := HTTPCli.Get("/version", &cacheData); err != nil {
+			return err
+		}
 	}
+	reflectme.Copy(&cacheData, ver)
+	return nil
+}
 
-	dataVer := xaapiv1.XDSVersion{}
-	if err := HTTPCli.Get("/version", &dataVer); err != nil {
+// XdsConfigGet Get current XDS Agent config
+func XdsConfigGet(cfg *xaapiv1.APIConfig) error {
+	return HTTPCli.Get("/config", cfg)
+}
+
+// XdsConfigSet Set XDS Agent config
+func XdsConfigSet(cfg xaapiv1.APIConfig) error {
+	// clear cache
+	cacheXdsVersion = nil
+
+	newCfg := xaapiv1.APIConfig{}
+	if err := HTTPCli.Post("/config", cfg, &newCfg); err != nil {
 		return err
 	}
 
-	cacheXdsVersion = &dataVer
-	*ver = dataVer
+	idx := XdsServerIndexGet()
+	if !newCfg.Servers[idx].Connected {
+		return fmt.Errorf("XDS server %s still not connected", cfg.Servers[idx].URL)
+	}
+
 	return nil
 }
 
