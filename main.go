@@ -360,8 +360,10 @@ func XdsConnInit(ctx *cli.Context) error {
 		return cli.NewExitError("ERROR while getting XDS config: "+err.Error(), 1)
 	}
 	svrCfg := xdsConf.Servers[XdsServerIndexGet()]
-	if serverURL != "" && (svrCfg.URL != serverURL || !svrCfg.Connected) {
-		svrCfg.URL = serverURL
+	if (serverURL != "" && svrCfg.URL != serverURL) || !svrCfg.Connected {
+		if serverURL != "" {
+			svrCfg.URL = serverURL
+		}
 		svrCfg.ConnRetry = 10
 		if err := XdsConfigSet(xdsConf); err != nil {
 			return cli.NewExitError("ERROR while updating XDS server URL: "+err.Error(), 1)
