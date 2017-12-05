@@ -189,6 +189,19 @@ func main() {
 	initCmdExec(&app.Commands)
 	initCmdMisc(&app.Commands)
 
+	// Add --config option to all commands to support --config option either before or after command verb
+	// IOW support following both syntaxes:
+	//   xds-cli exec --config myprj.conf ...
+	//   xds-cli --config myprj.conf exec ...
+	for i, cmd := range app.Commands {
+		if len(cmd.Flags) > 0 {
+			app.Commands[i].Flags = append(cmd.Flags, cli.StringFlag{Hidden: true, Name: "config, c"})
+		}
+		for j, subCmd := range cmd.Subcommands {
+			app.Commands[i].Subcommands[j].Flags = append(subCmd.Flags, cli.StringFlag{Hidden: true, Name: "config, c"})
+		}
+	}
+
 	sort.Sort(cli.FlagsByName(app.Flags))
 	sort.Sort(cli.CommandsByName(app.Commands))
 
