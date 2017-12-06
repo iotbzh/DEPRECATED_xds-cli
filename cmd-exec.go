@@ -54,7 +54,7 @@ func initCmdExec(cmdDef *[]cli.Command) {
 
 func exec(ctx *cli.Context) error {
 	prjID := ctx.String("id")
-	rPath := ctx.String("rPath")
+	rPath := ctx.String("rpath")
 	sdkid := ctx.String("sdkid")
 
 	// Check mandatory args
