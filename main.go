@@ -232,11 +232,16 @@ func main() {
 	// Load config file if requested
 	if confFile != "" {
 		earlyPrintf("confFile detected: %v", confFile)
+		confFile, err := common.ResolveEnvVar(confFile)
+		if err != nil {
+			exitError(1, "Error while resolving confFile: %v", err)
+		}
+		earlyPrintf("Resolved confFile: %v", confFile)
 		if !common.Exists(confFile) {
 			exitError(1, "Error env config file not found")
 		}
 		// Load config file variables that will overwrite env variables
-		err := godotenv.Overload(confFile)
+		err = godotenv.Overload(confFile)
 		if err != nil {
 			exitError(1, "Error loading env config file "+confFile)
 		}
