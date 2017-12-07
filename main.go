@@ -328,15 +328,22 @@ func XdsConnInit(ctx *cli.Context) error {
 		CsrfDisable:         true,
 		LogOut:              Log.Out,
 		LogPrefix:           "XDSAGENT: ",
-		LogLevel:            common.HTTPLogLevelWarning,
+		LogLevel:            common.HTTPLogLevelDebug,
 	}
 
 	HTTPCli, err = common.HTTPNewClient(agentURL, conf)
 	if err != nil {
 		errmsg := err.Error()
-		if m, err := regexp.MatchString("Get http.?://", errmsg); m && err == nil {
+		m, err := regexp.MatchString("Get http.?://", errmsg)
+		if (m && err == nil) || strings.Contains(errmsg, "Failed to get device ID") {
 			i := strings.LastIndex(errmsg, ":")
-			errmsg = "Cannot connection to " + agentURL + errmsg[i:]
+			newErr := "Cannot connection to " + agentURL
+			if i > 0 {
+				newErr += " (" + strings.TrimSpace(errmsg[i+1:]) + ")"
+			} else {
+				newErr += " (" + strings.TrimSpace(errmsg) + ")"
+			}
+			errmsg = newErr
 		}
 		return cli.NewExitError(errmsg, 1)
 	}
