@@ -75,14 +75,28 @@ var IOsk *socketio_client.Client
 
 // exitError exists this program with the specified error
 func exitError(code int, f string, a ...interface{}) {
+	earlyDisplay()
 	err := fmt.Sprintf(f, a...)
 	fmt.Fprintf(os.Stderr, err+"\n")
 	os.Exit(code)
 }
 
+// earlyDebug Used to log info before logger has been initialized
+var earlyDebug []string
+
+func earlyPrintf(format string, args ...interface{}) {
+	earlyDebug = append(earlyDebug, fmt.Sprintf(format, args...))
+}
+
+func earlyDisplay() {
+	for _, str := range earlyDebug {
+		Log.Infof("%s", str)
+	}
+	earlyDebug = []string{}
+}
+
 // main
 func main() {
-	var earlyDebug []string
 
 	// Allow to set app name from cli (useful for debugging)
 	if AppName == "" {
@@ -217,7 +231,7 @@ func main() {
 
 	// Load config file if requested
 	if confFile != "" {
-		earlyDebug = append(earlyDebug, fmt.Sprintf("confFile detected: %v", confFile))
+		earlyPrintf("confFile detected: %v", confFile)
 		if !common.Exists(confFile) {
 			exitError(1, "Error env config file not found")
 		}
@@ -232,7 +246,7 @@ func main() {
 		if err != nil {
 			exitError(1, "Error reading env config file "+confFile)
 		}
-		earlyDebug = append(earlyDebug, fmt.Sprintf("EnvConfFileMap: %v", EnvConfFileMap))
+		earlyPrintf("EnvConfFileMap: %v", EnvConfFileMap)
 	}
 
 	app.Before = func(ctx *cli.Context) error {
@@ -258,9 +272,7 @@ func main() {
 		Log.Formatter = &logrus.TextFormatter{}
 
 		Log.Infof("%s version: %s", AppName, app.Version)
-		for _, str := range earlyDebug {
-			Log.Infof("%s", str)
-		}
+		earlyDisplay()
 		Log.Debugf("\nEnvironment: %v\n", os.Environ())
 
 		if err = XdsConnInit(ctx); err != nil {
@@ -361,6 +373,7 @@ func XdsConnInit(ctx *cli.Context) error {
 	}
 	svrCfg := xdsConf.Servers[XdsServerIndexGet()]
 	if (serverURL != "" && svrCfg.URL != serverURL) || !svrCfg.Connected {
+		Log.Infof("Update XDS Server config: serverURL=%v, svrCfg=%v", serverURL, svrCfg)
 		if serverURL != "" {
 			svrCfg.URL = serverURL
 		}
