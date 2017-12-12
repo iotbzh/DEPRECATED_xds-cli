@@ -320,6 +320,11 @@ func XdsConnInit(ctx *cli.Context) error {
 		serverURL = "http://" + serverURL
 	}
 
+	lvl := common.HTTPLogLevelWarning
+	if Log.Level == logrus.DebugLevel {
+		lvl = common.HTTPLogLevelDebug
+	}
+
 	// Create HTTP client
 	Log.Debugln("Connect HTTP client on ", agentURL)
 	conf := common.HTTPClientConfig{
@@ -328,7 +333,7 @@ func XdsConnInit(ctx *cli.Context) error {
 		CsrfDisable:         true,
 		LogOut:              Log.Out,
 		LogPrefix:           "XDSAGENT: ",
-		LogLevel:            common.HTTPLogLevelDebug,
+		LogLevel:            lvl,
 	}
 
 	HTTPCli, err = common.HTTPNewClient(agentURL, conf)
