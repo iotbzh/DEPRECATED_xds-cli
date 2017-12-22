@@ -21,6 +21,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/franciscocpg/reflectme"
 	"github.com/iotbzh/xds-agent/lib/xaapiv1"
@@ -81,6 +82,11 @@ func XdsServerIDGet() string {
 func XdsServerIndexGet() int {
 	// FIXME support multiple server
 	return 0
+}
+
+// XdsServerComputeURL computes the URL used to access to XDS Server API
+func XdsServerComputeURL(endURL string) string {
+	return "servers/" + strconv.Itoa(XdsServerIndexGet()) + endURL
 }
 
 // ProjectsListGet Get the list of existing projects

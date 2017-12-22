@@ -20,7 +20,8 @@ package main
 
 import (
 	"fmt"
-	"strconv"
+	"os"
+	"regexp"
 
 	"github.com/iotbzh/xds-agent/lib/xaapiv1"
 	"github.com/urfave/cli"
@@ -33,12 +34,6 @@ func initCmdSdks(cmdDef *[]cli.Command) {
 		HideHelp: true,
 		Usage:    "SDKs commands group",
 		Subcommands: []cli.Command{
-			{
-				Name:    "add",
-				Aliases: []string{"a"},
-				Usage:   "Add a new SDK",
-				Action:  sdksAdd,
-			},
 			{
 				Name:   "get",
 				Usage:  "Get a property of a SDK",
@@ -58,20 +53,62 @@ func initCmdSdks(cmdDef *[]cli.Command) {
 				Action:  sdksList,
 				Flags: []cli.Flag{
 					cli.BoolFlag{
+						Name:  "all, a",
+						Usage: "display all existing sdks (installed + downloadable)",
+					},
+					cli.StringFlag{
+						Name:  "filter, f",
+						Usage: "regexp to filter output (filtering done only on ID, Name, Version and Arch fields) ",
+					},
+					cli.BoolFlag{
 						Name:  "verbose, v",
 						Usage: "display verbose output",
 					},
 				},
 			},
 			{
-				Name:    "remove",
-				Aliases: []string{"rm"},
-				Usage:   "Remove an existing SDK",
-				Action:  sdksRemove,
+				Name:    "install",
+				Aliases: []string{"i"},
+				Usage:   "Install a SDK",
+				Action:  sdksInstall,
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:   "id",
-						Usage:  "sdk id",
+						Usage:  "sdk id to install",
+						EnvVar: "XDS_SDK_ID",
+					},
+					cli.StringFlag{
+						Name:  "file, f",
+						Usage: "use this file to install SDK",
+					},
+					cli.BoolFlag{
+						Name:  "force",
+						Usage: "force SDK installation when already installed",
+					},
+				},
+			},
+			{
+				Name:    "uninstall",
+				Aliases: []string{"rm"},
+				Usage:   "UnInstall an existing SDK",
+				Action:  sdksUnInstall,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:   "id",
+						Usage:  "sdk id to un-install",
+						EnvVar: "XDS_SDK_ID",
+					},
+				},
+			},
+			{
+				Name:    "abort",
+				Aliases: []string{"a"},
+				Usage:   "Abort an install action",
+				Action:  sdksAbort,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:   "id",
+						Usage:  "sdk id to which abort action",
 						EnvVar: "XDS_SDK_ID",
 					},
 				},
@@ -83,10 +120,11 @@ func initCmdSdks(cmdDef *[]cli.Command) {
 func sdksList(ctx *cli.Context) error {
 	// Get SDKs list
 	sdks := []xaapiv1.SDK{}
-	if err := sdksListGet(&sdks); err != nil {
+	if err := _sdksListGet(&sdks); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
-	_displaySdks(sdks, ctx.Bool("verbose"))
+
+	_displaySdks(sdks, ctx.Bool("verbose"), ctx.Bool("all"), ctx.String("filter"))
 	return nil
 }
 
@@ -96,44 +134,60 @@ func sdksGet(ctx *cli.Context) error {
 		return cli.NewExitError("id parameter or option must be set", 1)
 	}
 	sdks := xaapiv1.SDK{}
-	url := "servers/" + strconv.Itoa(XdsServerIndexGet()) + "/sdks/" + id
+	url := XdsServerComputeURL("/sdks/" + id)
 	if err := HTTPCli.Get(url, &sdks); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
-	_displaySdks([]xaapiv1.SDK{sdks}, true)
+
+	_displaySdks([]xaapiv1.SDK{sdks}, true, true, "")
 	return nil
 }
 
-func _displaySdks(sdks []xaapiv1.SDK, verbose bool) {
+func _displaySdks(sdks []xaapiv1.SDK, verbose bool, all bool, filter string) {
 	// Display result
 	first := true
 	writer := NewTableWriter()
 	for _, s := range sdks {
+		if s.Status != xaapiv1.SdkStatusInstalled && !all {
+			continue
+		}
+		if filter != "" {
+			re := regexp.MustCompile(filter)
+			if !(re.MatchString(s.ID) || re.MatchString(s.Name) ||
+				re.MatchString(s.Profile) || re.MatchString(s.Arch) ||
+				re.MatchString(s.Version)) {
+				continue
+			}
+		}
+
 		if verbose {
 			if !first {
 				fmt.Fprintln(writer)
 			}
 			fmt.Fprintln(writer, "ID\t"+s.ID)
 			fmt.Fprintln(writer, "Name\t"+s.Name)
+			fmt.Fprintln(writer, "Description\t"+s.Description)
 			fmt.Fprintln(writer, "Profile\t"+s.Profile)
 			fmt.Fprintln(writer, "Arch\t"+s.Arch)
 			fmt.Fprintln(writer, "Version\t"+s.Version)
+			fmt.Fprintln(writer, "Status\t"+s.Status)
 			fmt.Fprintln(writer, "Path\t"+s.Path)
+			fmt.Fprintln(writer, "Url\t"+s.URL)
 
 		} else {
 			if first {
 				fmt.Fprintf(writer, "List of installed SDKs: \n")
-				fmt.Fprintf(writer, "  ID\tNAME\n")
+				fmt.Fprintf(writer, "  ID\tNAME\tSTATUS\tVERSION\tARCH\n")
 			}
-			fmt.Fprintf(writer, "  %s\t%s\n", s.ID, s.Name)
+			fmt.Fprintf(writer, "  %s\t%s\t%s\t%s\t%s\n", s.ID[:8], s.Name, s.Status, s.Version, s.Arch)
 		}
 		first = false
 	}
 	writer.Flush()
 }
 
-func sdksListGet(sdks *[]xaapiv1.SDK) error {
-	url := "servers/" + strconv.Itoa(XdsServerIndexGet()) + "/sdks"
+func _sdksListGet(sdks *[]xaapiv1.SDK) error {
+	url := XdsServerComputeURL("/sdks")
 	if err := HTTPCli.Get(url, &sdks); err != nil {
 		return err
 	}
@@ -142,15 +196,94 @@ func sdksListGet(sdks *[]xaapiv1.SDK) error {
 	return nil
 }
 
-func sdksAdd(ctx *cli.Context) error {
-	return fmt.Errorf("not supported yet")
+func sdksInstall(ctx *cli.Context) error {
+	id := GetID(ctx)
+	if id == "" {
+		return cli.NewExitError("id parameter or option must be set", 1)
+	}
+
+	// Process Socket IO events
+	type exitResult struct {
+		error string
+		code  int
+	}
+	exitChan := make(chan exitResult, 1)
+
+	IOsk.On("disconnection", func(err error) {
+		Log.Debugf("WS disconnection event with err: %v\n", err)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
+		exitChan <- exitResult{errMsg, 2}
+	})
+
+	IOsk.On(xaapiv1.EVTSDKInstall, func(ev xaapiv1.EventMsg) {
+		sdkEvt, _ := ev.DecodeSDKMsg()
+
+		if sdkEvt.Stdout != "" {
+			fmt.Printf("%s", sdkEvt.Stdout)
+		}
+		if sdkEvt.Stderr != "" {
+			fmt.Fprintf(os.Stderr, "%s", sdkEvt.Stderr)
+		}
+
+		if sdkEvt.Exited {
+			exitChan <- exitResult{sdkEvt.Error, sdkEvt.Code}
+		}
+	})
+
+	evReg := xaapiv1.EventRegisterArgs{Name: xaapiv1.EVTSDKInstall}
+	if err := HTTPCli.Post("/events/register", &evReg, nil); err != nil {
+		return cli.NewExitError(err, 1)
+	}
+
+	file := ctx.String("file")
+	force := ctx.Bool("force")
+	url := XdsServerComputeURL("/sdks")
+	sdks := xaapiv1.SDKInstallArgs{ID: id, Filename: file, Force: force}
+	newSdk := xaapiv1.SDK{}
+	if err := HTTPCli.Post(url, &sdks, &newSdk); err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	Log.Debugf("Result of %s: %v", url, newSdk)
+	fmt.Printf("Installating of '%s' SDK (id %v) successfully started.\n", newSdk.Name, newSdk.ID)
+
+	// Wait exit
+	select {
+	case res := <-exitChan:
+		if res.code == 0 {
+			Log.Debugln("Exit successfully")
+		}
+		if res.error != "" {
+			Log.Debugln("Exit with ERROR: ", res.error)
+		}
+		return cli.NewExitError(res.error, res.code)
+	}
 }
 
-func sdksRemove(ctx *cli.Context) error {
+func sdksUnInstall(ctx *cli.Context) error {
 	id := GetID(ctx)
 	if id == "" {
 		return cli.NewExitError("id parameter or option must be set", 1)
 	}
 
 	return fmt.Errorf("not supported yet")
+}
+
+func sdksAbort(ctx *cli.Context) error {
+	id := GetID(ctx)
+	if id == "" {
+		return cli.NewExitError("id parameter or option must be set", 1)
+	}
+
+	sdks := xaapiv1.SDKInstallArgs{ID: id}
+	newSdk := xaapiv1.SDK{}
+	url := XdsServerComputeURL("/sdks/abortinstall")
+	if err := HTTPCli.Post(url, &sdks, &newSdk); err != nil {
+		return cli.NewExitError(err, 1)
+	}
+
+	Log.Debugf("Result of %s: %v", url, newSdk)
+	return nil
 }
