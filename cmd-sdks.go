@@ -176,7 +176,11 @@ func _displaySdks(sdks []xaapiv1.SDK, verbose bool, all bool, filter string) {
 
 		} else {
 			if first {
+				if all {
+					fmt.Fprintf(writer, "List of available SDKs: \n")
+				} else {
 				fmt.Fprintf(writer, "List of installed SDKs: \n")
+				}
 				fmt.Fprintf(writer, "  ID\tNAME\tSTATUS\tVERSION\tARCH\n")
 			}
 			fmt.Fprintf(writer, "  %s\t%s\t%s\t%s\t%s\n", s.ID[:8], s.Name, s.Status, s.Version, s.Arch)
@@ -247,7 +251,8 @@ func sdksInstall(ctx *cli.Context) error {
 		return cli.NewExitError(err, 1)
 	}
 	Log.Debugf("Result of %s: %v", url, newSdk)
-	fmt.Printf("Installating of '%s' SDK (id %v) successfully started.\n", newSdk.Name, newSdk.ID)
+	fmt.Printf("Installation of '%s' SDK (id %v) successfully started.\n", newSdk.Name, newSdk.ID)
+
 
 	// Wait exit
 	select {
