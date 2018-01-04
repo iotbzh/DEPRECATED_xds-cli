@@ -102,6 +102,10 @@ func initCmdSdks(cmdDef *[]cli.Command) {
 						Usage:  "sdk id to un-install",
 						EnvVar: "XDS_SDK_ID",
 					},
+					cli.BoolFlag{
+						Name:  "force, f",
+						Usage: "remove confirmation prompt before removal",
+					},
 				},
 			},
 			{
@@ -287,6 +291,12 @@ func sdksUnInstall(ctx *cli.Context) error {
 	id := GetID(ctx)
 	if id == "" {
 		return cli.NewExitError("id parameter or option must be set", 1)
+	}
+
+	if !ctx.Bool("force") {
+		if !Confirm("Do you permanently remove SDK id '" + id + "' [yes/No] ? ") {
+			return nil
+		}
 	}
 
 	delSdk := xaapiv1.SDK{}

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/franciscocpg/reflectme"
 	"github.com/iotbzh/xds-agent/lib/xaapiv1"
@@ -114,4 +115,13 @@ func GetID(ctx *cli.Context) string {
 		id = idArgs
 	}
 	return id
+}
+
+// Confirm Return true when user answer 'y' or 'yes' to a question
+func Confirm(question string) bool {
+	var answer string
+	fmt.Print(question)
+	fmt.Scanln(&answer)
+	ans := strings.ToLower(strings.TrimSpace(answer))
+	return (ans == "y" || ans == "yes")
 }

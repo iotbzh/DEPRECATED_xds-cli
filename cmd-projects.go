@@ -92,6 +92,10 @@ func initCmdProjects(cmdDef *[]cli.Command) {
 						Usage:  "project id",
 						EnvVar: "XDS_PROJECT_ID",
 					},
+					cli.BoolFlag{
+						Name:  "force, f",
+						Usage: "remove confirmation prompt before removal",
+					},
 				},
 			},
 			{
@@ -207,6 +211,12 @@ func projectsRemove(ctx *cli.Context) error {
 	id := GetID(ctx)
 	if id == "" {
 		return cli.NewExitError("id parameter or option must be set", 1)
+	}
+
+	if !ctx.Bool("force") {
+		if !Confirm("Do you permanently remove project id '" + id + "' [yes/No] ? ") {
+			return nil
+		}
 	}
 
 	if err := HTTPCli.Delete("/projects/"+id, &res); err != nil {
