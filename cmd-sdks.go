@@ -82,6 +82,10 @@ func initCmdSdks(cmdDef *[]cli.Command) {
 						Usage: "use this file to install SDK",
 					},
 					cli.BoolFlag{
+						Name:  "debug",
+						Usage: "enable debug mode (useful to investigate install issue)",
+					},
+					cli.BoolFlag{
 						Name:  "force",
 						Usage: "force SDK installation when already installed",
 					},
@@ -179,11 +183,11 @@ func _displaySdks(sdks []xaapiv1.SDK, verbose bool, all bool, filter string) {
 				if all {
 					fmt.Fprintf(writer, "List of available SDKs: \n")
 				} else {
-				fmt.Fprintf(writer, "List of installed SDKs: \n")
+					fmt.Fprintf(writer, "List of installed SDKs: \n")
 				}
-				fmt.Fprintf(writer, "  ID\tNAME\tSTATUS\tVERSION\tARCH\n")
+				fmt.Fprintf(writer, "ID\t NAME\t STATUS\t VERSION\t ARCH\n")
 			}
-			fmt.Fprintf(writer, "  %s\t%s\t%s\t%s\t%s\n", s.ID[:8], s.Name, s.Status, s.Version, s.Arch)
+			fmt.Fprintf(writer, "%s\t %s\t %s\t %s\t %s\n", s.ID[:8], s.Name, s.Status, s.Version, s.Arch)
 		}
 		first = false
 	}
@@ -202,8 +206,11 @@ func _sdksListGet(sdks *[]xaapiv1.SDK) error {
 
 func sdksInstall(ctx *cli.Context) error {
 	id := GetID(ctx)
-	if id == "" {
-		return cli.NewExitError("id parameter or option must be set", 1)
+	file := ctx.String("file")
+	force := ctx.Bool("force")
+
+	if id == "" && file == "" {
+		return cli.NewExitError("id or file parameter or option must be set", 1)
 	}
 
 	// Process Socket IO events
@@ -242,23 +249,32 @@ func sdksInstall(ctx *cli.Context) error {
 		return cli.NewExitError(err, 1)
 	}
 
-	file := ctx.String("file")
-	force := ctx.Bool("force")
 	url := XdsServerComputeURL("/sdks")
-	sdks := xaapiv1.SDKInstallArgs{ID: id, Filename: file, Force: force}
+	sdks := xaapiv1.SDKInstallArgs{
+		ID:       id,
+		Filename: file,
+		Force:    force,
+	}
+
+	if ctx.Bool("debug") {
+		sdks.InstallArgs = []string{"--debug"}
+	}
+
 	newSdk := xaapiv1.SDK{}
 	if err := HTTPCli.Post(url, &sdks, &newSdk); err != nil {
 		return cli.NewExitError(err, 1)
 	}
 	Log.Debugf("Result of %s: %v", url, newSdk)
-	fmt.Printf("Installation of '%s' SDK (id %v) successfully started.\n", newSdk.Name, newSdk.ID)
+	fmt.Printf("Installation of '%s' SDK successfully started.\n", newSdk.Name)
 
+	// TODO: trap CTRL+C and print question: "Installation of xxx is in progress, press 'a' to abort, 'b' to continue in background or 'c' to continue installation"
 
 	// Wait exit
 	select {
 	case res := <-exitChan:
 		if res.code == 0 {
 			Log.Debugln("Exit successfully")
+			fmt.Println("SDK ID " + newSdk.ID + " successfully installed.")
 		}
 		if res.error != "" {
 			Log.Debugln("Exit with ERROR: ", res.error)
@@ -273,7 +289,16 @@ func sdksUnInstall(ctx *cli.Context) error {
 		return cli.NewExitError("id parameter or option must be set", 1)
 	}
 
-	return fmt.Errorf("not supported yet")
+	delSdk := xaapiv1.SDK{}
+	url := XdsServerComputeURL("/sdks/" + id)
+	if err := HTTPCli.Delete(url, &delSdk); err != nil {
+		return cli.NewExitError(err, 1)
+	}
+
+	Log.Debugf("Result of %s: %v", url, delSdk)
+
+	fmt.Println("SDK ID " + delSdk.ID + " successfully deleted.")
+	return nil
 }
 
 func sdksAbort(ctx *cli.Context) error {
