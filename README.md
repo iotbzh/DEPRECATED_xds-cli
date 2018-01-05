@@ -1,5 +1,9 @@
 # xds-cli
 
+**DEPRECATED: this repo has been moved to AGL Gerrit server**
+**[https://gerrit.automotivelinux.org/gerrit/#/admin/projects/src/xds/xds-cli](https://gerrit.automotivelinux.org/gerrit/#/admin/projects/src/xds/xds-cli)**
+
+
 `xds-cli` is a command line tool used to control / interface X(cross) Development System.
 
 ## Documentation
